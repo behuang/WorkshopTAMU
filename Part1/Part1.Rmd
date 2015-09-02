@@ -2,7 +2,7 @@
 title: "R/mpMap Workshop"
 author: "Emma Huang"
 date: "TAMU, 2 Sep. 2015"
-output: slidy_presentation
+output: beamer_presentation
 subtitle: 'Part 1: Overview'
 ---
 ## Plan 
@@ -60,8 +60,10 @@ Part 1: Overview
 ```{r fig.width=8, fig.height=5, echo=FALSE}
 library(png)
 library(grid)
-img <- readPNG("Intro.png")
- grid.raster(img)
+if (file.exists("Intro.png")) {
+  img <- readPNG("Intro.png")
+  grid.raster(img)
+}
 ```
 
 ## At CSIRO
@@ -229,6 +231,8 @@ Questions
 ```{r fig.width=10, fig.height=6, echo=FALSE}
 library(png)
 library(grid)
-img <- readPNG("Q1.png")
+if (file.exists("Q1.png")) {
+ img <- readPNG("Q1.png")
  grid.raster(img)
+}
 ```
