@@ -2,61 +2,72 @@
 title: "R/mpMap Workshop"
 author: "Emma Huang"
 date: "TAMU, 2 Sep. 2015"
-output: beamer_presentation
+output: slidy_presentation
 subtitle: 'Part 1: Overview'
 ---
-## Plan 
+
+# Plan 
 
 Wednesday
 
-* Part 1: Overview (20 min)
+- Part 1: Overview (20 min)
     + Introduction
     + Background
     + Installation
     + Documentation
     + Importing Data
-* Exercises (5 min)
-* Break/Questions (5 min)
+- Exercises (5 min)
+- Break/Questions (5 min)
 
-## Plan (Thursday)
+------
+
+# Plan (Thursday)
 8:30-9:30
 
-* Part 2: Linkage Map Construction (45 min)
+- Part 2: Linkage Map Construction (45 min)
     + Estimating recombination fractions
     + Grouping
     + Ordering
     + Refinement
-* Exercises (10 min)
-* Break/Questions (5 min)
+- Exercises (10 min)
+- Break/Questions (5 min)
 
-## Plan
+-----
+
+# Plan
 9:30-10:30
 
-* Part 3: QTL Mapping (45 min)
+- Part 3: QTL Mapping (45 min)
     + Full Model
     + Association mapping
     + Meta-alleles
     + Mixed models
-* Exercises (10 min)
-* Break/Questions (5 min)
+- Exercises (10 min)
+- Break/Questions (5 min)
 
-## Plan 
+------
+
+# Plan 
 10:30-11:30
 
-* Part 4: Advanced Topics (45 min)
+- Part 4: Advanced Topics (45 min)
     + Imputation
     + Selective phenotyping
     + Simulation
     + Haplotype Mosaics/Recombination
     + Visualization
-* Exercises (10 min)
-* Break/Questions (5 min)
+- Exercises (10 min)
+- Break/Questions (5 min)
+
+------
 
 Part 1: Overview
 =================================
 ![Part 1](Part1.gif)
 
-## Introduction
+-------
+
+# Introduction
 ```{r fig.width=8, fig.height=5, echo=FALSE}
 library(png)
 library(grid)
@@ -66,51 +77,61 @@ if (file.exists("Intro.png")) {
 }
 ```
 
-## At CSIRO
+-------
 
-* 2009: Start of MAGIC linkage map construction 
-* 2011: Published R/mpMap 
-* 2013: Workshop @ NIAB on MAGIC-Type Populations 
+# At CSIRO
+
+- 2009: Start of MAGIC linkage map construction 
+- 2011: Published R/mpMap 
+- 2013: Workshop @ NIAB on MAGIC-Type Populations 
     + http://openwetware.org/wiki/MAGIC:Slides
     
-* 2014: Genetics/G3 special collection 
+- 2014: Genetics/G3 special collection 
     + http://www.genetics.org/cgi/collection/multiparental_populations
 
-* 2015: Workshop @ PAG Asia on Multiparental Populations 
+- 2015: Workshop @ PAG Asia on Multiparental Populations 
 
-## Collaborators
+-------
 
-* Wheat MAGIC4/8, CSIRO
-* Durum wheat MAGIC4, U. Bologna
-* Barley MAGIC8, U. Bonn
-* Tomato MAGIC8, INRA
-* Arabidopsis MAGIC19, Cambridge, Oxford
-* Chickpea MAGIC8, ICRISAT
-* Rice MAGIC8/16, IRRI 
-* ...
+# Collaborators
 
-## Going forward - less involvement with MAGIC
+- Wheat MAGIC4/8, CSIRO
+- Durum wheat MAGIC4, U. Bologna
+- Barley MAGIC8, U. Bonn
+- Tomato MAGIC8, INRA
+- Arabidopsis MAGIC19, Cambridge, Oxford
+- Chickpea MAGIC8, ICRISAT
+- Rice MAGIC8/16, IRRI 
+- ...
 
-### Associate Director in Population Analytics @ Janssen
+-------
 
-* Focus on precision (personalized) medicine
+# Going forward - less involvement with MAGIC
 
-### Sep. 9-11 Wageningen, Netherlands
-* EUCARPIA Biometrics in Plant Breeding
+## Associate Director in Population Analytics @ Janssen
 
-### Nov. 16-18 China
-* Nature Agrigenomics Conference
+- Focus on precision (personalized) medicine
 
-## Background: why mpMap?
+## Sep. 9-11 Wageningen, Netherlands
+- EUCARPIA Biometrics in Plant Breeding
 
-* Alternatives:
+## Nov. 16-18 China
+- Nature Agrigenomics Conference
+
+-------
+
+# Background: why mpMap?
+
+- Alternatives:
     + HAPPY - applicable to general designs
     + R/qtl - more general
-* Interfaces with both
-* More specific: focus on MAGIC
-* More general: broad range of tools
+- Interfaces with both
+- More specific: focus on MAGIC
+- More general: broad range of tools
 
-## Installation
+-------
+
+# Installation
 
 ```{r, eval=FALSE}
 install.packages("devtools")
@@ -124,9 +145,11 @@ library(mpMap)
 library(qtl)
 ```
 
-## Documentation
+-------
 
-* Should be the first stop for
+# Documentation
+
+- Should be the first stop for
     + inputs
     + outputs
     + related pages
@@ -139,32 +162,36 @@ library(mpMap)
 ?read.mpcross
 ?mpcross
 ```
+-------
 
-## Importing Data
+# Importing Data
 
-* Can be created using files or objects
-* Necessary components
+- Can be created using files or objects
+- Necessary components
     + finals - progeny genotypes
     + founders - parental genotypes
     + pedigree - record of all crosses used in design
     + id - indices of rows in pedigree of genotyped finals
     + fid - indices of parental rows in pedigree
-* Optional components
+- Optional components
     + map 
     + phenotypes
 
-## Common issues importing data
+-------
 
-* Numeric genotypes
-* Pedigree structure
-* Indices
+# Common issues importing data
 
-### [((A x B) x (C x D)) x ((E x F) x (G x H))]-1-1-1-1-1-BP-BP-BP
-### A/B//C/D///E/F//G/H
-### ABCDEFGH
+- Numeric genotypes
+- Pedigree structure
+- Indices
 
+[((A x B) x (C x D)) x ((E x F) x (G x H))]-1-1-1-1-1-BP-BP-BP
+A/B//C/D///E/F//G/H
+ABCDEFGH
 
-## Simulated Data
+-------
+
+# Simulated Data
 ```{r simdat}
 map <- sim.map(len=100, n.mar=51, eq.spacing=T, include.x=F)
 ped <- sim.mpped(4, 1, 2, 3, 1)
@@ -174,57 +201,70 @@ names(dat)
 dat$founders[,1:5]
 ```
 
-## Simulated Pedigree
+-------
+
+# Simulated Pedigree
 ```{r pedigree}
 ped
 ```
 
+-------
 Exercises 
 =============================
 
-## Installation and Documentation
-* What version number is it?
-* When was it last updated?
+# Installation and Documentation
+- What version number is it?
+- When was it last updated?
 
-* Name three functions used for linkage map construction
-* Name three visualization functions
-* Name two other software packages to which mpMap can output files
+- Name three functions used for linkage map construction
+- Name three visualization functions
+- Name two other software packages to which mpMap can output files
 
-## Importing Data - Founders
-* Which will work? 
-* What will cause problems? 
+-------
+
+# Importing Data - Founders
+- Which will work? 
+- What will cause problems? 
 
 ```{r founders, echo=F}
 read.csv("fou1.csv", h=T, row.names=1)
 read.csv("fou2.csv", h=T, row.names=1)
 ```
 
-## Importing Data - Finals
-* Which will work? 
-* What will cause problems? 
+-------
+
+# Importing Data - Finals
+- Which will work? 
+- What will cause problems? 
 
 ```{r finals, echo=F}
 head(read.csv("fin1.csv", h=T, row.names=1))
 head(read.csv("fin2.csv", h=T, row.names=1))
 ```
 
-## Importing Data - Pedigree
-* Which will work? 
-* What will cause problems? 
+-------
+
+# Importing Data - Pedigree
+- Which will work? 
+- What will cause problems? 
 
 ```{r ped, echo=F}
 head(read.csv("ped1.csv", h=T, row.names=1))
 head(read.csv("ped2.csv", h=T, row.names=1))
 ```
 
-## Importing Data - Map
-* Which will work? 
-* What will cause problems? 
+-------
+
+# Importing Data - Map
+- Which will work? 
+- What will cause problems? 
 
 ```{r map, echo=F}
 read.csv("map1.csv", h=T, row.names=1)
 read.csv("map2.csv", h=T, row.names=1)
 ```
+
+-------
 
 Questions
 ===============================
