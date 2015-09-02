@@ -11,7 +11,7 @@ knitr::opts_chunk$set(fig.width=4, fig.height=4, fig.path='Figs/',
                       warning=FALSE, message=FALSE)
 ```
 ## Plan 
-9:30-10:30
+8:30-9:30
 
 * Part 2: Linkage Map Construction (45 min)
     + Estimating recombination fractions

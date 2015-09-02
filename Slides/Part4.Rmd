@@ -21,9 +21,9 @@ knitr::opts_chunk$set(fig.width=4, fig.height=4, fig.path='Figs/',
 ```
 
 ## Plan 
-11:15-12:00
+10:30-11:30
 
-- Part 4: Advanced Topics (30 min)
+- Part 4: Advanced Topics (45 min)
     + Imputation
     + Selective phenotyping
     + Simulation/Recombination

@@ -2,7 +2,7 @@
 title: "R/mpMap Workshop"
 subtitle: "Part 1: Overview"
 author: "Emma Huang"
-date: "TAMU, 3 Sep. 2015"
+date: "TAMU, 2 Sep. 2015"
 output: ioslides_presentation
 ---
 ## Plan 
@@ -19,7 +19,7 @@ Wednesday
 * Break/Questions (5 min)
 
 ## Plan (Thursday)
-9:30-10:30
+8:30-9:30
 
 * Part 2: Linkage Map Construction (45 min)
     + Estimating recombination fractions
@@ -30,9 +30,9 @@ Wednesday
 * Break/Questions (5 min)
 
 ## Plan
-10:30-11:15
+9:30-10:30
 
-* Part 3: QTL Mapping (30 min)
+* Part 3: QTL Mapping (45 min)
     + Full Model
     + Association mapping
     + Meta-alleles
@@ -41,9 +41,9 @@ Wednesday
 * Break/Questions (5 min)
 
 ## Plan 
-11:15-12:00
+10:30-11:30
 
-* Part 4: Advanced Topics (30 min)
+* Part 4: Advanced Topics (45 min)
     + Imputation
     + Selective phenotyping
     + Simulation
