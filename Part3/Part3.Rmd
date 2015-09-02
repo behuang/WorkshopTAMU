@@ -31,7 +31,7 @@ load('datfinalPart2.RData')
 load('ArabidopsisExample.RData')
 ```
 
-```{r, fig.width=7, fig.height=5}
+```{r, fig.width=7, fig.height=4}
 plot(datfinal$map)
 ```
 
@@ -53,7 +53,7 @@ What does your trait look like?
     + more than one field?
     + more than one year?
 
-```{r echo=F, fig.height=3, fig.width=3}
+```{r echo=F, fig.height=2.5, fig.width=2.5}
 img <- readPNG("Part3_TSEx.png")
 grid.raster(img)
 ```
@@ -304,13 +304,13 @@ sim3 <- sim.mpcross(map=map, pedigree=ped, qtl=
 save(sim3, file="sim3.RData")
 ```
 
-## Exercises - haplotype mosaics
+## Answers - haplotype mosaics
 ```{r, eval=F}
 mpp <- mpprob(sim3, program="qtl")
 plot(mpp, nlines=20)
 ```
 
-## Exercises - QTL mapping
+## Answers - QTL mapping
 ```{r, eval=F}
 mpq1 <- mpIM(object=mpp, responsename="pheno", ncov=0, dwindow=50)
 mpq2 <- mpIM(object=mpp, responsename="pheno", ncov=0, 

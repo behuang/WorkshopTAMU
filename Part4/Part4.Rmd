@@ -224,7 +224,7 @@ grid.raster(img)
 ```
 
 ## Plot of output
-```{r, fig.width=8, fig.height=5}
+```{r, fig.width=7, fig.height=4}
   plot(selLines, type=2)  
 ```
 

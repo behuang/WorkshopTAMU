@@ -44,13 +44,12 @@ library(nnls)
 load('Part2.RData')
 dat1 <- subset(datrf, markers=colnames(dat$finals))
 ```
-
-## Step 1: Estimating RF
 ```{r, eval=F}
 library(gdata)
 datrf <- mpestrf(dat)
 ```
 
+## Step 1: Estimating RF
 ```{r plotrandom}
 image(datrf$rf$theta)
 ```
