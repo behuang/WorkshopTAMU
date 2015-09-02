@@ -1,0 +1,489 @@
+---
+title: "R/mpMap Workshop"
+subtitle: "Part 4: Advanced Topics"
+author: "Emma Huang"
+date: "TAMU, 3 Sep. 2015"
+output: ioslides_presentation
+---
+
+You have the power...
+===========================
+```{r fig.width=7, fig.height=3, echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("CYOA3.png")
+grid.raster(img)
+```
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=4, fig.height=4, fig.path='Figs/',
+                      warning=FALSE, message=FALSE)
+```
+
+## Plan 
+11:15-12:00
+
+- Part 4: Advanced Topics (30 min)
+    + Imputation
+    + Selective phenotyping
+    + Simulation/Recombination
+    + Visualization
+- Exercises (10 min)
+- Questions (5 min)
+
+Imputation of Missing Data
+=============================
+![data](DataGrammar.png)
+
+## Missing Data
+
+- Causes
+    + GBS - alignment
+    + Quality
+    + SNP - hets not called
+    + Different platforms 
+ 
+```{r, echo=FALSE}
+library(mpMap)
+library(qtl)
+library(spclust)
+```
+
+## Typical Approaches
+```{r fig.width=8, fig.height=4, echo=FALSE}
+img <- readPNG("Part4_Imputation.png")
+grid.raster(img)
+```
+
+## High-density reference panel
+```{r fig.width=8, fig.height=4, echo=FALSE}
+img <- readPNG("Part4_TypicalImputation.png")
+grid.raster(img)
+```
+
+## Good performance
+```{r fig.width=7, fig.height=3, echo=FALSE}
+img <- readPNG("Part4_TopDown.png")
+grid.raster(img)
+```
+
+* But what if the reference panel is incomplete? 
+
+## Simplest solution: get more data
+
+* Higher coverage
+* Different platform
+* More replicates
+* ... 
+* But sometimes that's not possible
+
+## Impute using all data
+```{r fig.width=8, fig.height=4, echo=FALSE}
+img <- readPNG("Part4_HMMImputation.png")
+grid.raster(img)
+```
+
+## Simulation results
+```{r fig.width=8, fig.height=5, echo=FALSE}
+img <- readPNG("Part4_FounderSimulations.png")
+grid.raster(img)
+```
+
+## Dataset simulated with missing data
+```{r, eval=FALSE, echo=FALSE}
+## has already been run - just included to see how it was generated
+  map <- sim.map(len=101, n.mar=101, include.x=FALSE, eq.spacing=TRUE)
+  ped <- sim.mpped(8, 1, 200)
+  dat <- sim.mpcross(map, ped)
+  missdat <- dat
+  missfin <- matrix(rbinom(prod(dim(missdat$finals)), 1, .5), nrow=nrow(missdat$finals))
+  missdat$finals[missfin==1] <- NA
+  missfou <- matrix(rbinom(prod(dim(missdat$founders)), 1, .25), nrow=nrow(missdat$founders))
+  missdat$founders[missfou==1] <- NA
+  save(missdat, dat, file="MissingData.RData")
+  ## Set 25% of all data in founders missing
+  ## Set 50% of observed data missing
+```
+
+```{r}
+  load('MissingData.RData')
+  table(apply(missdat$founders, 2, function(x) sum(is.na(x))))
+  nmiss <- apply(missdat$finals, 1, function(x) sum(is.na(x))/length(x))
+```
+
+## 50% missing for all lines; 25% missing per founder
+```{r}
+  hist(nmiss, breaks=20, col="tomato")
+```
+
+## Implementation of imputation
+* mpimpute
+    + options for founders, finals, or both
+    + relies on founder probability calculation
+    
+```{r}
+  impdat <- mpimpute(missdat)
+```
+
+## How much could we impute? 
+```{r} 
+  table(apply(impdat$founders, 2, function(x) sum(!is.na(x)))) 
+  nmissi <- apply(impdat$finals, 1, function(x) sum(is.na(x))/length(x))
+  sum(nmissi>0)
+```
+
+## How accurate was the imputation?
+```{r}
+  sum(is.na(impdat$founders)) 
+  sum(impdat$founders!=dat$founders)
+  sum(is.na(impdat$finals))/prod(dim(impdat$finals))
+  sum(impdat$finals!=dat$finals, na.rm=T)/sum(is.na(missdat$finals))
+```  
+
+## In practice
+- May want to test on your known data 
+    + Mask out some percentage, try imputation and estimate accuracy
+- Affected by 
+    + marker density/spacing
+    + sample size
+    + type of genotyping platform
+    + level of heterozygosity, etc. 
+
+Selective Phenotyping
+=======================
+```{r fig.width=7, fig.height=3, echo=FALSE}
+img <- readPNG("SelPhen.png")
+grid.raster(img)
+```
+
+## Costs
+
+- Phenotyping has overtaken genotyping in cost
+    + done many times
+    + at multiple scales
+    + in multiple environments
+    + for multiple traits 
+    + ... 
+- So how do we best select a sample for phenotyping from a large set of genotyped individuals? 
+
+## Goal 
+- A selection method which 
+    + is general, flexible and robust
+    + best captures the genetic information of the population
+    + maximized diversity, avoids genetic duplication
+- Previous options (Jin et al. 2004, Jannink 2005) focused on specific designs, could not handle missing data
+
+## SPCLUST
+- Step 1: Compute pairwise distances between all individuals
+- Step 2: Cluster distances into k groups
+- Step 3: Select representative from each cluster
+```{r fig.width=8, fig.height=3, echo=FALSE}
+img <- readPNG("spclust.png")
+grid.raster(img)
+```
+
+## 2-stage SPCLUST
+- Multiple stages of selection to refine QTL position
+- Genomewide -> candidate gene level
+- Selected lines will 
+    + have higher genetic diversity, so 
+    + are more likely to have recombination
+    + and better resolve QTL location
+
+## 2-stages
+```{r fig.width=8, fig.height=5, echo=FALSE}
+img <- readPNG("stage2spclust.png")
+grid.raster(img)
+```
+
+## QTL Support intervals
+```{r fig.width=8, fig.height=5, echo=FALSE}
+img <- readPNG("QTLsupportspclust.png")
+grid.raster(img)
+```
+
+## Implementation
+- R package spclust
+- Functions to 
+    + compute distance (spdist)
+    + select lines (spclust, single- or multi-stage)
+    + visualize (plot.spclust)
+
+## Example
+```{r, echo=FALSE, eval=FALSE}
+  library(qtl)
+  map <- sim.map(rep(100, 5), n.mar=51, include.x=F)
+  ped <- sim.mpped(4, 1, 200)
+  dat <- sim.mpcross(map, ped)
+  save(dat, file="SimulatedSP.RData")
+``` 
+```{r}
+ library(spclust)
+ load('SimulatedSP.RData')
+ selLines <- spclust(dat, nlines=20, method="average")
+```
+
+## Plot of output
+```{r, fig.width=8, fig.height=5}
+  plot(selLines, type=2)  
+```
+
+Simulation
+==============
+
+## What have we seen so far? 
+- General MAGIC simulation 
+    + varying map
+    + varying pedigree
+    + varying QTL 
+- Missing data
+
+## What can you do with this?
+- Assess imputation quality in your data
+- Compare different designs
+    + number of generations of advanced intercrossing
+    + DH vs. RIL
+    + MAGIC vs. NAM
+- Test power for different approaches
+- Generate empirical significance thresholds
+- Estimate power for your map/data/founders 
+- See how theory compares to reality
+
+## Comparison of designs
+- Generate different pedigrees
+- Generate data from them
+- Compare number of recombinations, size of haplotype blocks
+ 
+```{r, eval=F}
+ ped4 <- sim.mpped(4, 3, 200) # MAGIC4RIL 
+ ped8 <- sim.mpped(8, 30, 200) # MAGIC8RIL, 30 funnels
+ ped8ai2 <- sim.mpped(8, 1, 200, iripgen=2) # MAGIC8AI2RIL
+ ped26nam <- generateNAMpedigree(26, 100) #NAMRIL
+```
+
+## Whole genome data
+- AlphaMPSim (Hickey et al. 2014)
+- Written in Fortran/R
+- Faster and more memory efficient than using sim.mpcross
+- For very large-scale simulations (>30K markers)
+
+## Estimation of power
+- Need to set up larger scale scripts
+- Generate multiple datasets
+    + Could keep observed founder genotypes, map, new progeny
+    + Could keep observed progeny genotypes as well - new phenotype
+    + Depends on how generalizable results need to be
+- Analyze each dataset as you would observed data
+- How often are QTL of different sizes detected? 
+- See Kover et al. (2009) for more details on procedure
+
+Recombination
+====================
+
+## Counting recombination events
+```{r}
+load('datfinalPart2.RData')
+## Based just on highest probability allele
+nrecEst <- lapply(mppEst$estfnd, function(x) 
+  apply(x, 1, function(y) return(sum(diff(y[!is.na(y)])!=0))))
+mean(rowSums(do.call("cbind", nrecEst)))
+
+## Errors in the map can cause additional recombination events
+load('Part2.RData')
+nrecTrue <- lapply(mppTrue$estfnd, function(x) 
+  apply(x, 1, function(y) return(sum(diff(y[!is.na(y)])!=0))))
+mean(rowSums(do.call("cbind", nrecTrue)))
+```
+
+## Alternate method of counting
+```{r}
+## Based on forward-backward algorithm with penalty
+source('nrec.R')
+mean(nrec(mppEst, penalty=0)$totrec)
+mean(nrec(mppEst, penalty=1)$totrec)
+mean(nrec(mppEst, penalty=2)$totrec)
+``` 
+
+## Simulation of recombination events
+```{r, fig.width=7, fig.height=5, echo=F}
+img <- readPNG("Part4_RecSim.png")
+grid.raster(img)
+```
+
+## Counting per chromosome
+```{r}
+nr <- nrec(mppEst, penalty=1)
+boxplot(do.call("cbind", nr$nrec), col="tomato")
+```
+
+## QTL mapping with recombination events
+```{r eval=F}
+mppEst$pheno$nrec <- nrec(mppEst, penalty=1)$totrec
+mprec <- mpIM(object=mppEst, responsename="nrec", ncov=0)
+## No QTL found - but possible in real data
+```
+
+Visualization
+====================
+
+## Additional libraries
+- ggplot2
+- lattice
+- RCircos
+- Heatplus
+- LDheatmap
+- ... 
+
+## mpMap/Interactive
+- Works on OS/X and Windows
+- Uses:
+    + Grouping markers, combining groups
+    + Removing markers
+    + Flipping blocks of markers
+    + Re-ordering chunks of markers
+- Note: currently only works for mpcross objects, but could relatively easily be extended to more general crosses
+
+## Plot functions for most objects
+- plot.mpcross
+    + Linkage map
+    + Histogram of phenotype(s)
+    + RF/LOD heatmap
+- plot.mpprob
+    + Percent of chromosome inherited from each founder
+    + Haplotype mosaics for each chromosome
+    + Founder inheritance across genome
+- plot.mpqtl
+    + QTL profile
+    + Support interval
+
+## plot.mpcross
+```{r, eval=F}
+ load('datfinalPart2.RData')
+ plot(datfinal)
+```
+
+```{r, echo=F, fig.width=4, fig.height=4}
+img <- readPNG("plotmpcross1.png")
+grid.raster(img)
+```
+```{r, echo=F, fig.width=4, fig.height=4}
+img <- readPNG("plotmpcross2.png")
+grid.raster(img)
+```
+
+## plot.mpprob
+```{r, eval=F}
+mpp <- mpprob(datfinal, program="qtl")
+plot(mpp)
+```
+
+```{r, echo=F, fig.width=4, fig.height=4}
+img <- readPNG("plotmpprob1.png")
+grid.raster(img)
+```
+```{r, echo=F, fig.width=4, fig.height=4}
+img <- readPNG("plotmpprob2.png")
+grid.raster(img)
+```
+
+## plot.mpprob (cont'd)
+```{r, echo=F, fig.width=5, fig.height=5}
+img <- readPNG("plotmpprob3.png")
+grid.raster(img)
+```
+
+## Comparisons of maps - validation
+- mapcomp function
+    + subsets down to common markers/chromosomes
+    + compares positions of markers with the same names
+    + identifies markers with conflicting chromosomes
+- summary.mapcomp
+    + summarizes number of markers in each map and in common
+    + identifies duplicated markers in each map
+    + correlations between chromosomes in each map
+- plot.mapcomp
+    + scatterplot of markers positions for the two maps
+
+## mapcomp
+```{r}
+load('Part2.RData')
+mc <- mapcomp(dat, datfinal)
+summary(mc)
+```
+
+## plot.mapcomp
+```{r, fig.width=6, fig.height=4}
+plot(mc)
+```
+
+## Interactions
+```{r fig.width=5, fig.height=5, echo=FALSE}
+img <- readPNG("Part4_Interactions.png")
+grid.raster(img)
+```
+
+## Circle plot code
+```{r, eval=F}
+library(RCircos)
+source('CircularIntx.R')
+pmatrix <- matrix(runif(505*505, 0, 1), nrow=505)
+plotCircIntx(pmatrix, threshold=1e-4, map=datfinal$map, file="CircEx.png")
+```
+```{r, echo=F, fig.width=4, fig.height=4}
+img <- readPNG("CircEx.png")
+grid.raster(img)
+```
+
+Exercises
+===================
+
+## Imputation
+
+
+## Selective Phenotyping
+
+
+## Simulation
+Very basic simulation - generate 10 datasets each from 4-parent and 8-parent
+with these parameters
+- same map, 5 chromosomes, 51 markers per chromosome, 100 cM, evenly spaced
+- QTL
+    + Chr 1, 47 cM, size=.5
+    + Chr 2, 13 cM, size=.3
+    + Chr 3, 81 cM, size=.1
+- How often is each QTL detected? 
+
+## Recombination
+For one of the 4-parent and 8-parent datasets generated for the simulation, what's the 
+average number of recombinations? 
+
+Plot a histogram of the recombinations for each dataset. 
+
+## Visualization
+
+
+## References (1/2)
+Jin et al. 2004, Selective phenotyping for increased efficiency in genetic mapping studies. Genetics 168:2285-2293. doi: 10.1534/genetics.104.027524
+
+Jannink 2005, Selective phenotyping to accurately map quantitative trait loci. Crop Science 45:901-908. doi: 10.2135/cropsci2004.0278
+
+Hickey et al. 2014, AlphaMPSIM: flexible simulation of multi-parent crosses. Bioinformatics 30:2686-2688. doi: 10.1093/bioinformatics/btu206
+
+Huang et al. 2013, Selecting subsets of genotyped experimental populations for phenotyping to maximize genetic diversity. TAG 126: 379-388. doi: 10.1007/s00122-012-1986-4
+
+## References (2/2)
+Huang et al. 2014, Efficient imputation of missing markers in low-coverage genotyping-by-sequencing data from multiparental crosses. Genetics 197:401-404. doi: 10.1534/genetics.113.158014
+
+Kover et al. 2009, A multiparent advanced generation inter-cross to fine-map quantitative traits in Arabidopsis thaliana. PLoS Genetics doi: 10.1371/journal.pgen.1000551
+
+Questions
+====================
+
+
+The End!
+================
+Contact me:
+b.emma.huang@gmail.com
+
+github.com/behuang/mpMap for updates
+

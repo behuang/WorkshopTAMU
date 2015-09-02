@@ -1,0 +1,319 @@
+---
+title: "R/mpMap Workshop"
+subtitle: "Part 3: QTL Mapping"
+author: "Emma Huang"
+date: "TAMU, 3 Sep. 2015"
+output: ioslides_presentation
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=8, fig.height=4, fig.path='Figs/',
+                      warning=FALSE, message=FALSE)
+```
+
+## Plan
+9:30-10:15
+
+* Part 3: QTL Mapping (30 min)
+    + Full Model
+    + Association mapping
+    + Meta-alleles
+    + Mixed models
+* Exercises (10 min)
+* Break/Questions (5 min)
+
+## Starting Point
+```{r, echo=FALSE}
+library(mpMap)
+library(aods3)
+library(VPdtw)
+load('datfinalPart2.RData')
+load('ArabidopsisExample.RData')
+```
+
+```{r, fig.width=7, fig.height=5}
+plot(datfinal$map)
+```
+
+## Goal
+Associate phenotype with genotype - QTL mapping
+```{r fig.width=8, fig.height=5, echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("Part3Profile.png")
+grid.raster(img)
+```
+
+## Before anything else
+What does your trait look like?
+
+- Normally distributed? 
+- Transgressive segregation?
+- Do you have more than one? 
+    + more than one field?
+    + more than one year?
+
+```{r echo=F, fig.height=3, fig.width=3}
+img <- readPNG("Part3_TSEx.png")
+grid.raster(img)
+```
+
+## Beyond our scope:
+
+- Epistasis
+    + biallelic - EpiGPU (Hemani et al. 2011), GLIDE (Kam-Thong et al. 2012)
+    + CrossTermsR package (in development) Josh.Bowden@csiro.au
+- Binary traits
+    + Not too difficult to modify for linear models
+    + More complex for mixed models - Boden et al. 2015
+- Multiple traits
+    + In theory can fit with mpMap
+    + May want to consider MPWGAIM (Verbyla et al. 2014)
+    + or combinations of univariate analyses
+  
+## Full Model (Linkage)
+
+- e.g., HAPPY (Mott et al. 2000)
+- Specify
+$$y=\Sigma_{f=1}^F \beta_f X_f + \epsilon$$
+where $\epsilon$ ~ $N(0, \sigma^2)$ and $f$ ranges over founders
+- Advantages
+    + Full flexibility
+    + All founder effects estimated
+- Drawbacks
+    + Too many founder effects?
+    + High df test
+
+## Digression: IBD Haplotypes
+
+- Regions of the genome inherited as a chunk
+- Full model is capturing effects of inheriting chunks from each parent
+
+- Unobserved
+    + Estimate which alleles inherited from different founders via Hidden Markov Model
+    + Depends on distance between markers, genotypes of founders, genotypes of finals, population design
+
+## Haplotype Mosaics
+
+How well can we reconstruct haplotypes? 
+```{r fig.width=8, fig.height=5, echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("Part3haplotypes.png")
+grid.raster(img)
+```
+
+## Estimating haplotype mosaics
+```{r}
+mpp <- mpprob(datfinal, program="qtl", step=2)
+```
+
+## Probabilities
+```{r}
+round(mpp$prob[[1]][1:3, 1:8],2)
+mpp$estfnd[[1]][1:3, 1:2]
+```
+
+## Biallelic Model (association)
+
+- e.g., TASSEL (Bradbury et al. 2007)
+- Utilized by Mackay et al., G3, 2014
+- For each marker j, 
+$$y= \beta_j X_j + \epsilon$$
+where $\epsilon$ ~ $N(0, \sigma^2)$
+- Drawbacks
+    + Reduced power when multiple founder effects
+- Advantages
+    + Computationally simpler and faster
+  
+## Grouped Model (meta-alleles)
+
+- e.g., ClustHaplo (Leroux et al., TAG, 2014)
+- Presenting two alternate approaches at Eucarpia Biometrics in Plant Breeding on Sep. 11 
+- Drawbacks
+    + Determining the best way to construct groups
+    + Consistency with observed alleles; biologically meaningful
+- Advantages
+    + Intermediate to other models in both flexibility and computation
+  
+## Arabidopsis MAGIC example - Days to Bolting
+
+* Kover et al. 2009, 19 founders, 1254 SNPs
+
+```{r}
+load('ArabidopsisExample.RData')
+table(nall)
+```
+
+## Distribution of days to bolting
+```{r}
+hist(armpc$pheno$days.to.bolt, breaks=20, col="forestgreen")
+```
+
+## QTL mapping Arabidopsis MAGIC
+```{r, eval=FALSE}
+mpqfull <- mpIM(object=armpc, ncov=0, responsename="days.to.bolt")
+
+mpqbi <- mpIM(object=armpc, ncov=0, responsename="days.to.bolt", 
+              foundergroups=armpc$founders)
+
+mpqgr <- mpIM(object=armpc, ncov=0, responsename="days.to.bolt", 
+              foundergroups=gr)
+```
+
+## Results of mapping
+```{r}
+load('ResultsArabidopsisExample.RData')
+dim(summary(mpqfull))
+```
+- Refine results - look only at most significant
+```{r}
+mpqfull2 <- findqtl(mpqfull, dwindow=5, threshold=6)
+mpqbi2 <- findqtl(mpqbi, dwindow=5, threshold=6)
+mpqgr2 <- findqtl(mpqgr, dwindow=5, threshold=6)
+dim(summary(mpqfull2)) # findqtl is producing odd results, need to check
+```
+
+## Chr 4 QTL (FRI, GA)
+```{r, echo=FALSE}
+## need to construct a data frame to plot all 3
+datf <- data.frame(chr=rep(4, length(mpqgr$map[[4]])), pos=mpqgr$map[[4]], lod=-log10(mpqfull$QTLresults$pvalue[[4]]))
+datb <- data.frame(chr=rep(4, length(mpqgr$map[[4]])), pos=mpqgr$map[[4]], lod=-log10(mpqbi$QTLresults$pvalue[[4]]))
+datg <- data.frame(chr=rep(4, length(mpqgr$map[[4]])), pos=mpqgr$map[[4]], lod=-log10(mpqgr$QTLresults$pvalue[[4]]))
+class(datf) <- class(datb) <- class(datg) <- c("scanone", "data.frame")
+qtl:::plot.scanone(datf, datb, datg)
+```
+
+## Mixed models 
+
+- Can be important for including design information
+    + variation across rows, columns in a field trial;
+    + variation between experimenters in milling/baking; 
+    + variation over time 
+    + relationships between individuals
+- Implementation in mpMap requires ASReml license
+
+- mpIM(baseModel, pheno, idname, ...)
+    + one-stage
+    + two-stage (no weights)
+
+## Composite interval mapping
+
+### mpIM(..., ncov, ...)
+- Not particularly efficient
+- Stepwise selection of covariates from total number of markers
+- ncov is maximum number selected
+- Can be very slow with many markers included
+
+## Simultaneous Model
+
+- fit.mpqtl
+    + Includes all QTL in the same model
+    + Typically reduced significance once accounting for others
+- qindex 
+    + Allows selection of certain QTL to fit
+    + e.g., those still significant after accounting for others
+
+## Reducing number of QTL - either based on p-value or location
+```{r}
+fit(mpqbi, qindex=which(fit(mpqbi)$table$pvalue<.1))$table
+```
+
+## Simultaneous vs. Individual
+```{r}
+data.frame(fit(mpqbi2)$table[,-c(1,3)], Ind.pv=summary(mpqbi2)$pvalue)
+```
+
+- Percent phenotypic variance explained computed from adjusted $R^2$
+
+## Support interval
+
+- Calculates LOD-drop from peak of QTL
+```{r}
+supportinterval(mpqgr2, lodsupport=2)$support
+```
+
+- By default, included in plot of QTL profile
+
+## Plot of QTL profile
+
+```{r}
+plot(mpqgr2, chr=5)
+```
+
+## Significance thresholds
+- Multiple testing correction
+    + Bonferroni - divide by number of tests (conservative)
+    + Empirical simulations - generate data under null
+    + Permutations - break up associations
+- Balancing time/computation vs. power
+
+## Other approaches
+
+```{r fig.width=7, fig.height=5, echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("Part3MethodsFlow.png")
+grid.raster(img)
+```
+
+## References (1/2)
+Boden et al. 2015, Ppd-1 is a key regulator of inflorescence architecture and paired spikelet development in wheat. Nature Plants doi:10.1038/nplants.2014.16
+
+Bradbury et al. 2007, TASSEL: software for association mapping of complex traits in diverse samples. Bioinformatics 23:2633-2635. doi: 10.1093/bioinformatics/btm308
+
+Hemani et al. 2011, EpiGPU: exhaustive pairwise epistasis scans parallelized on consumer level graphics cards. Bioinformatics 27:1462-1465. doi: 10.1093/bioinformatics/btr172
+
+Kam-Thong et al. 2012, GLIDE: GPU-based linear regression for detection of epistasis. Heredity 73:220-236. 
+
+## References (2/2)
+Kover et al. 2009, A multiparent advanced generation inter-cross to fine-map quantitative traits in Arabidopsis thaliana. PLoS Genetics doi: 10.1371/journal.pgen.1000551
+
+Leroux et al. 2014, Clusthaplo: a plug-in for MCQTL to enhance QTL detection using ancestral alleles in multi-cross designs. TAG 127:921-33. doi: 10.1007/s00122-014-2267-1
+
+Mackay et al. 2014, An eight-parent multiparent advanced generation inter-cross population for winter-sown wheat: creation, properties, and validation. G3 4: 1603-1610. 
+
+Mott et al. 2000, A new method for fine-mapping quantitative trait loci in outbred animal stocks. PNAS 97:12649-12654. 
+
+Verbyla et al. 2014, Whole-genome analysis of multienvironment or multitrait QTL in MAGIC. G3 4:1569-1584. 
+
+Exercises
+=======================
+
+## Data sim3
+
+- Plot haplotype mosaics for lines with 20 most recombinations
+- Map QTL using 
+    + the full model
+    + a biallelic model
+    + composite interval mapping with 5 covariates
+- How many do you detect? 
+- Which ones do you detect better with one model than another? 
+- Fit a model with all QTL in it simultaneously
+    + How does this affect their significance?
+
+## Exercises - Data generation
+```{r, eval=F}
+map <- sim.map(len=rep(100, 5), n.mar=51, eq.spacing=T, include.x=F)
+ped <- sim.mpped(4, 1, 500)
+sim3 <- sim.mpcross(map=map, pedigree=ped, qtl=
+                     rbind(c(1, 21, 0, .4, 0, 0), 
+                           c(1, 71, 0, 0, -.3, 0), 
+                           c(4, 35, .3, 0, .3, 0),
+                           c(5, 59, 0, .4, 0, -.4)))
+save(sim3, file="sim3.RData")
+```
+
+## Exercises - haplotype mosaics
+```{r, eval=F}
+mpp <- mpprob(sim3, program="qtl")
+plot(mpp, nlines=20)
+```
+
+## Exercises - QTL mapping
+```{r, eval=F}
+mpq1 <- mpIM(object=mpp, responsename="pheno", ncov=0, dwindow=50)
+mpq2 <- mpIM(object=mpp, responsename="pheno", ncov=0, 
+             foundergroups=mpp$founders, dwindow=50) 
+mpq3 <- mpIM(object=mpp, responsename="pheno", ncov=5, dwindow=50)
+```

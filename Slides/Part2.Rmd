@@ -1,0 +1,323 @@
+---
+title: "R/mpMap Workshop"
+subtitle: "Part 2: Linkage Map Construction"
+author: "Emma Huang"
+date: "TAMU, 3 Sep. 2015"
+output: ioslides_presentation
+---
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(fig.width=4, fig.height=4, fig.path='Figs/',
+                      warning=FALSE, message=FALSE)
+```
+## Plan 
+9:30-10:30
+
+* Part 2: Linkage Map Construction (45 min)
+    + Estimating recombination fractions
+    + Grouping
+    + Ordering
+    + Refinement
+* Exercises (10 min)
+* Break/Questions (5 min)
+
+## Starting Point - Simulated Example
+
+```{r, eval=FALSE}
+library(mpMap)
+map <- sim.map(len=rep(100,5), n.mar=101, eq.spacing=T, include.x=F)
+ped <- sim.mpped(4, 1, 1000)
+dat <- sim.mpcross(map, ped)
+
+## Randomize the order of the markers
+ord <- sample(1:505)
+randat <- subset(dat, markers=ord)
+```
+
+```{r load, echo=FALSE}
+library(mpMap)
+library(gdata)
+library(Heatplus)
+library(ggplot2)
+library(mpMapInteractive)
+library(nnls)
+load('Part2.RData')
+dat1 <- subset(datrf, markers=colnames(dat$finals))
+```
+
+## Step 1: Estimating RF
+```{r, eval=F}
+library(gdata)
+datrf <- mpestrf(dat)
+```
+
+```{r plotrandom}
+image(datrf$rf$theta)
+```
+
+## End goal: RF for true order
+```{r plotcorrect}
+image(dat1$rf$theta)
+```
+
+## Estimating RF: Theory
+
+Maximize the likelihood:
+$$P(Y;r) = \Sigma_G P(Y|G) P(G;r)$$
+
+- Y = observed genotypes
+- G = underlying founder genotypes
+- $P(Y|G)$ broken down by pairs of markers and individuals
+    + takes values of 0 and 1
+- $P(G;r)$ depends on pedigree 
+    + derived in Broman (2005)
+
+## Estimating RF: Practice
+
+Maximize over a grid of recombination fraction values
+
+On a larger scale:
+
+- GPU implementation 
+- MPI implementation
+- Parallelized over all pairs of markers
+- Time reduction from 2 hours to 25 sec
+- Additional compilation options required
+
+```{r gpu, eval=FALSE}
+datrf <- mpestrf(dat, GPU=TRUE, mpi=TRUE)
+```
+
+## An aside: Estimation Error
+* Ahfock et al. (2014), Genetics 198:117-128
+* Estimation of variability associated with RF estimates allows
+    + computation of probability of correct order
+    + hypothesis testing of marker ordering in triplets
+    + characterization of uncertainty in map depending on marker density, founder distribution patterns, and sample size
+
+## Effect of estimation error on map
+```{r fig.width=4, fig.height=4, echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("AhfockPCO1.png")
+ grid.raster(img)
+```
+```{r fig.width=4, fig.height=4, echo=FALSE}
+library(png)
+library(grid)
+img <- readPNG("AhfockPCO2.png")
+grid.raster(img)
+```
+
+## Step 1a: Binning Markers
+
+- mpcollapse 
+    + groups markers with rf <= cutoff
+    + within bins, forms haplotypes
+    + imputes missing values where possible
+    + recodes markers by matching to haplotypes
+    + reduces to a single binned marker
+
+- mpexpand
+    + given full data, decompresses binned object
+    + otherwise, produces expanded map
+
+## Example binning
+
+```{r mpcollapse}
+mpbin <- mpcollapse(datrf)
+dim(datrf$finals)
+dim(mpbin$finals)
+```
+
+## Binned markers
+```{r}
+index <- which(duplicated(mpbin$bins$binMarkerName) 
+               | duplicated(mpbin$bins$binMarkerName, fromLast=TRUE))
+head(mpbin$bins[index,])
+```
+
+## Binning process
+```{r, echo=FALSE}
+bin1 <- mpbin$bins$binMarkerName[index[1]]
+i1 = which(mpbin$bins$binMarkerName==bin1)
+i2 = which(colnames(mpbin$founders)==bin1)
+l1 = c(1:2, 6:7, 10)
+```
+```{r}
+cbind(datrf$founders[,i1], mpbin$founders[,i2])
+cbind(datrf$finals[l1, i1], mpbin$finals[l1, i2])
+```
+
+## Step 2: Grouping Markers
+
+- mpgroup
+    + hierarchical clustering 
+    + metric based on rf and LOD
+    + set number of groups to form
+
+```{r}
+datgrp <- mpgroup(datrf, groups=5)
+```
+
+## How well does grouping do?
+```{r}
+table(datgrp$lg$groups)
+chrtrue <- substr(names(datgrp$lg$groups), 2, 2)
+table(chrtrue, datgrp$lg$groups)
+```
+
+## Step 3: Ordering Markers
+
+- mporder
+    + Seriation algorithm to order markers
+    + Travelling Salesman heuristic solver
+    + Minimize path length
+    + Minimize Anti-Robinson events
+
+- computemap
+    + Estimates map positions based on pairwise rf
+    + Positions based on neighborhood of markers
+
+```{r}
+datord <- mporder(datgrp, type="2", criterion="AR_events")
+datmap <- computemap(datord, maxOffset=1)
+```
+
+## How well does automatic ordering do?
+Comparison of orders for all chromosomes
+```{r, echo=FALSE}
+  matchchr <- list()
+  chrindex <- c(5, 1, 2, 3, 4)
+  for (i in 1:5) 
+    matchchr[[i]] <- match(names(datmap$map[[chrindex[i]]]), names(dat$map[[i]]))
+  chrpl <- data.frame(Original=rep(1:101, 5), New=unlist(matchchr), Chr=rep(1:5, each=101))
+```
+```{r, fig.width=7}
+  ggplot(chrpl, aes(Original, New))+facet_wrap(~Chr)+geom_point()
+```
+
+
+## How to decide maxOffset? 
+Consider a variety - select one before major drop off
+
+```{r, echo=FALSE}
+maplength <- vector(length=20)
+for (i in 1:20){
+  test <- computemap(datmap, maxOffset=i)
+  maplength[i] <- sum(unlist(lapply(test$map, max)))
+}
+plot(maplength, pch=19)
+```
+
+## Step 4: Refinement - mpMapInteractive
+
+* Visual comparison of different orders
+
+* Interactive demo! 
+```{r, eval=FALSE}
+sub <- subset(datmap, chr=2)
+newdat <- qtPlot(sub)
+```
+
+## Step 4: Refinement - compare_orders
+
+* Uses R/qtl engine to calculate XOs for different orders
+```{r}
+sub <- subset(datmap, chr=1)
+nmrk <- ncol(sub$finals)
+ord <- rbind(1:nmrk, c(7:1, 8:nmrk), c(2, 4, 1, 7, 5, 3, 6, 8:nmrk)) 
+```
+
+## Compare_orders
+```{r}
+ordxo <- compare_orders(sub, orders=ord, method="countXO")
+```
+
+## Results
+```{r}
+ordxo[, c(1:15, ncol(ordxo))]
+colnames(sub$finals)[1:8]
+```
+
+## Final version
+
+Refine order as much as possible based on diagnostics
+```{r, eval=FALSE}
+datfinal <- qtPlot(datmap)
+```
+Recompute map with chosen maxOffset
+```{r}
+datfinal <- computemap(datmap, maxOffset=5)
+```
+## Step 5: Validation
+
+- mapcomp 
+    + Compares two input maps
+    + Reduces to common markers
+    + Must have the same chromosome names
+    + Can apply to maps or mpcross objects
+
+## Validation summary 
+```{r}
+datfinal$map <- datfinal$map[c(5, 1:4)]
+names(datfinal$map) <- names(dat$map)
+mc <- mapcomp(datfinal, dat)
+summary(mc)
+```
+
+## Validation plot
+```{r, fig.width=6}
+plot(mc)
+```
+
+Exercises
+=================================
+
+## Dataset sim2.1
+
+- How many markers are there? per chr?
+- Plot the genetic map
+- Estimate recombination fractions
+- Plot the heatmap
+- Estimate the map using the correct order
+- What's the length of each chromosome?
+- What commands did I use to simulate this data?
+
+## Dataset sim2.2
+- Correct the map
+
+Questions
+==================================
+![Q2](Q2.png)
+
+## Exercise sim2.1
+```{r, eval=F}
+map <- sim.map(len=rep(150, 3), n.mar=51, eq.spacing=T, include.x=F)
+ped <- sim.mpped(4, 1, 400)
+dat2.1 <- sim.mpcross(map, ped)
+save(dat2.1, file="sim2.1.RData")
+```
+
+## Exercise sim2.2
+```{r, eval=F}
+load('sim2.1.RData')
+fou <- apply(dat2.1$founders, 2, as.integer)
+rownames(fou) <- rownames(dat2.1$founders)
+colnames(fou) <- colnames(dat2.1$founders)
+dat2.1$founders <- fou
+fin <- apply(dat2.1$finals, 2, as.integer)
+rownames(fin) <- rownames(dat2.1$finals)
+colnames(fin) <- colnames(dat2.1$finals)
+dat2.1$finals <- fin
+dat2.1 <- mpestrf(dat2.1)
+dat2.2 <- qtPlot(dat2.1)
+dat2.2$lg <- list()
+dat2.2$lg$all.groups=1:2
+dat2.2$lg$groups <- c(rep(1, 51), rep(2, 102))
+sub <- subset(dat2.2, markers=52:153)
+sub <- mporder(sub, type="2", criterion="path_length")
+dat2.2 <- subset(dat2.2, markers=c(colnames(dat2.2$finals)[1:51],
+                                   colnames(sub$finals)))
+save(dat2.2, file="sim2.2.RData")
+```
