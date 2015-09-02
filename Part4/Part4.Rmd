@@ -434,34 +434,6 @@ img <- readPNG("CircEx.png")
 grid.raster(img)
 ```
 
-Exercises
-===================
-
-## Imputation
-
-
-## Selective Phenotyping
-
-
-## Simulation
-Very basic simulation - generate 10 datasets each from 4-parent and 8-parent
-with these parameters
-- same map, 5 chromosomes, 51 markers per chromosome, 100 cM, evenly spaced
-- QTL
-    + Chr 1, 47 cM, size=.5
-    + Chr 2, 13 cM, size=.3
-    + Chr 3, 81 cM, size=.1
-- How often is each QTL detected? 
-
-## Recombination
-For one of the 4-parent and 8-parent datasets generated for the simulation, what's the 
-average number of recombinations? 
-
-Plot a histogram of the recombinations for each dataset. 
-
-## Visualization
-
-
 ## References (1/2)
 Jin et al. 2004, Selective phenotyping for increased efficiency in genetic mapping studies. Genetics 168:2285-2293. doi: 10.1534/genetics.104.027524
 
