@@ -1,9 +1,9 @@
 ---
 title: "R/mpMap Workshop"
-subtitle: "Part 1: Overview"
 author: "Emma Huang"
 date: "TAMU, 2 Sep. 2015"
-output: ioslides_presentation
+output: slidy_presentation
+subtitle: 'Part 1: Overview'
 ---
 ## Plan 
 
@@ -69,7 +69,11 @@ img <- readPNG("Intro.png")
 * 2009: Start of MAGIC linkage map construction 
 * 2011: Published R/mpMap 
 * 2013: Workshop @ NIAB on MAGIC-Type Populations 
+    + http://openwetware.org/wiki/MAGIC:Slides
+    
 * 2014: Genetics/G3 special collection 
+    + http://www.genetics.org/cgi/collection/multiparental_populations
+
 * 2015: Workshop @ PAG Asia on Multiparental Populations 
 
 ## Collaborators
