@@ -40,8 +40,10 @@ Associate phenotype with genotype - QTL mapping
 ```{r fig.width=8, fig.height=5, echo=FALSE}
 library(png)
 library(grid)
+if (file.exists("Part3Profile.png")) {
 img <- readPNG("Part3Profile.png")
 grid.raster(img)
+}
 ```
 
 ## Before anything else
@@ -54,8 +56,10 @@ What does your trait look like?
     + more than one year?
 
 ```{r echo=F, fig.height=2.5, fig.width=2.5}
+if (file.exists("Part3_TSEx.png")) {
 img <- readPNG("Part3_TSEx.png")
 grid.raster(img)
+}
 ```
 
 ## Beyond our scope:
@@ -99,8 +103,10 @@ How well can we reconstruct haplotypes?
 ```{r fig.width=8, fig.height=5, echo=FALSE}
 library(png)
 library(grid)
+if (file.exists("Part3haplotypes.png")) {
 img <- readPNG("Part3haplotypes.png")
 grid.raster(img)
+}
 ```
 
 ## Estimating haplotype mosaics
@@ -163,6 +169,7 @@ mpqgr <- mpIM(object=armpc, ncov=0, responsename="days.to.bolt",
 
 ## Results of mapping
 ```{r}
+if (file.exists("ResultsArabidopsisExample.RData"))
 load('ResultsArabidopsisExample.RData')
 dim(summary(mpqfull))
 ```
@@ -171,7 +178,7 @@ dim(summary(mpqfull))
 mpqfull2 <- findqtl(mpqfull, dwindow=5, threshold=6)
 mpqbi2 <- findqtl(mpqbi, dwindow=5, threshold=6)
 mpqgr2 <- findqtl(mpqgr, dwindow=5, threshold=6)
-dim(summary(mpqfull2)) # findqtl is producing odd results, need to check
+dim(summary(mpqfull2)) 
 ```
 
 ## Chr 4 QTL (FRI, GA)
@@ -253,8 +260,10 @@ plot(mpqgr2, chr=5)
 ```{r fig.width=7, fig.height=5, echo=FALSE}
 library(png)
 library(grid)
+if (file.exists("Part3MethodsFlow.png")) {
 img <- readPNG("Part3MethodsFlow.png")
 grid.raster(img)
+}
 ```
 
 ## References (1/2)

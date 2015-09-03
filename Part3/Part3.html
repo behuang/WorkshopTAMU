@@ -295,7 +295,8 @@ mpqgr &lt;- mpIM(object=armpc, ncov=0, responsename=&quot;days.to.bolt&quot;,
 
 </article></slide><slide class=''><hgroup><h2>Results of mapping</h2></hgroup><article  id="results-of-mapping">
 
-<pre class = 'prettyprint lang-r'>load(&#39;ResultsArabidopsisExample.RData&#39;)
+<pre class = 'prettyprint lang-r'>if (file.exists(&quot;ResultsArabidopsisExample.RData&quot;))
+load(&#39;ResultsArabidopsisExample.RData&#39;)
 dim(summary(mpqfull))</pre>
 
 <pre >## [1] 43  7</pre>
@@ -307,7 +308,7 @@ dim(summary(mpqfull))</pre>
 <pre class = 'prettyprint lang-r'>mpqfull2 &lt;- findqtl(mpqfull, dwindow=5, threshold=6)
 mpqbi2 &lt;- findqtl(mpqbi, dwindow=5, threshold=6)
 mpqgr2 &lt;- findqtl(mpqgr, dwindow=5, threshold=6)
-dim(summary(mpqfull2)) # findqtl is producing odd results, need to check</pre>
+dim(summary(mpqfull2)) </pre>
 
 <pre >## [1] 16  7</pre>
 
